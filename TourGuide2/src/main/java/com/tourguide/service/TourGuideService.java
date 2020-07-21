@@ -44,11 +44,15 @@ public class TourGuideService {
 	boolean testMode = true;
 	
 
-	
+	// Supprimer ce controller dans les microservices
 	public TourGuideService(GpsUtil gpsUtil, RewardsService rewardsService) {
+		// dans le microService gpsUtil
 		this.gpsUtil = gpsUtil;
+		
+		// dans le microService Reward
 		this.rewardsService = rewardsService;
 		
+		// dans le microService User
 		if(testMode) {
 			logger.info("TestMode enabled");
 			logger.debug("Initializing users");
@@ -56,6 +60,7 @@ public class TourGuideService {
 			logger.debug("Finished initializing users");
 		}
 		
+		// dans le microService User
 		tracker = new Tracker(this);
 		
 		addShutDownHook();
@@ -88,20 +93,19 @@ public class TourGuideService {
 		return providers;
 	}
 	
-	@Async("asyncExecutor")
-	public CompletableFuture<VisitedLocation> getUserLocation(User user) {
+	
+	public VisitedLocation getUserLocation(User user) {
 		VisitedLocation visitedLocation = (user.getVisitedLocations().size() > 0) ?
 			user.getLastVisitedLocation() :
 			trackUserLocation(user);
-		return CompletableFuture.completedFuture(visitedLocation);
+		return visitedLocation;
 	}
 	
-	@Async("asyncExecutor")
-	public CompletableFuture<VisitedLocation> trackUserLocation(User user) {
-		VisitedLocation visitedLocation = getUserLocation(getUser(user.getUserName()));
+	public VisitedLocation trackUserLocation(User user) {
+		VisitedLocation visitedLocation = gpsUtil.getUserLocation(user.getUserId());
 		user.addToVisitedLocations(visitedLocation);
 		rewardsService.calculateRewards(user);
-		return CompletableFuture.completedFuture(visitedLocation);
+		return visitedLocation;
 	}
 
 	public List<Attraction> getNearByAttractions(VisitedLocation visitedLocation) {
@@ -168,8 +172,8 @@ public class TourGuideService {
 			String phone = "000";
 			String email = userName + "@tourGuide.com";
 			 //created by JB
-			UserPreferences userPreferences = new UserPreferences(nbrNight, nbrTicket, nbrAdult, nbrChild);
-			User user = new User(UUID.randomUUID(), userName, phone, email, userPreferences);
+			//UserPreferences userPreferences = new UserPreferences(nbrNight, nbrTicket, nbrAdult, nbrChild);
+			User user = new User(UUID.randomUUID(), userName, phone, email);
 			generateUserLocationHistory(user);
 			
 			internalUserMap.put(userName, user);
